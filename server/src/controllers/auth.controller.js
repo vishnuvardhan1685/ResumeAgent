@@ -37,6 +37,7 @@ const googleAuth = async (req, res) => {
         );
         const accessToken = generateAccessToken(user._id);
         const refreshToken = generateRefreshToken(user._id);
+        console.log(`User ${user._id} authenticated via Google: ${email}`);
         return res.status(200).json({ accessToken, refreshToken, user });   
     } catch (error) {
         console.log("Google authentication failed:", error);
@@ -53,6 +54,7 @@ const refreshToken = async (req,res) => {
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
         const userId = decoded.id;
         const newAccessToken = generateAccessToken(userId);
+        console.log(`New access token generated for user ${userId}`);
         return res.status(200).json({ accessToken: newAccessToken });
     } catch (error) {
         console.log("Refresh token failed:", error);
