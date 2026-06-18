@@ -5,14 +5,12 @@ import jwt from 'jsonwebtoken';
 
 export const verifyToken = (req,res,next) => {
     const header = req.headers['authorization'];
-    if(!header){
+    const token = header?.startsWith('Bearer ')
+        ? header.split(' ')[1]
+        : req.query.token;
+    if(!token){
         console.log("Authorization header missing");
-        return res.status(401).json({ message: 'Authorization header missing' });
-    }
-    const token = header.split(' ')[1];
-    if(!token){ 
-        console.log("Token missing");
-        return res.status(401).json({ message: 'Token missing' });
+        return res.status(401).json({ message: 'Authorization token missing' });
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

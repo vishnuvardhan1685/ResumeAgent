@@ -6,7 +6,7 @@
 // PUT /api/user/profile → updateProfile — allow updating targetRole, experienceLevel, 
 // preferredLocation only (whitelist fields, never let user update email or googleId)
 import express from 'express';
-import { verifyToken } from '../middlewares/auth';
+import { verifyToken } from '../middlewares/auth.js';
 import { getProfile, updateProfile } from '../controllers/user.controller.js';
 
 const router = express.Router();

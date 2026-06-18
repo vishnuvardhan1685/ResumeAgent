@@ -6,27 +6,31 @@ import rateLimit from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import redisClient from '../config/redis.js';
 
+const shouldUseRedisStore = process.env.NODE_ENV === 'production' && Boolean(process.env.REDIS_URL);
+
+const redisStore = () => shouldUseRedisStore ? new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+}) : undefined;
+
 const generalRateLimit = rateLimit({
-    store: new RedisStore({
-        sendCommand: (...args) => redisClient.call(...args),
-    }),
+    store: redisStore(),
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
     message: 'Too many requests from this IP, please try again after 15 minutes',
-    onLimitReached: (req, res, options) => {
+    handler: (req, res) => {
         console.log(`Rate limit exceeded for IP: ${req.ip}`);
+        res.status(429).send('Too many requests from this IP, please try again after 15 minutes');
     }
 });
 
 const discoverRateLimit = rateLimit({
-    store: new RedisStore({
-        sendCommand: (...args) => redisClient.call(...args),
-    }),
+    store: redisStore(),
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10, // limit each IP to 10 requests per windowMs
     message: 'Too many requests from this IP, please try again after 15 minutes',
-    onLimitReached: (req, res, options) => {
+    handler: (req, res) => {
         console.log(`Discover rate limit exceeded for IP: ${req.ip}`);
+        res.status(429).send('Too many requests from this IP, please try again after 15 minutes');
     }
 });
 

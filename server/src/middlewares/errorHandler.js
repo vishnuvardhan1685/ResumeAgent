@@ -2,10 +2,8 @@
 // A 4-argument Express error handler (err, req, res, next). Log the error, 
 // return res.status(err.statusCode || 500).json({ success: false, message: err.message }).
 
-import { logger } from '../utils/logger.js';
-
 export const errorHandler = (err, req, res, next) => {
-    logger.error(err.stack);
+    console.error(err.stack);
     res.status(err.statusCode || 500).json({
         success: false,
         message: err.message || 'Server Error'

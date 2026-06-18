@@ -7,7 +7,7 @@
 
 import express from 'express';
 import Job from '../models/Job.js';
-import { agentClient } from '../utils/agentClient.js';
+import agentClient from '../utils/agentClient.js';
 
 const createJob = async (req,res) => {
     const userId = req.user.id;
@@ -23,9 +23,10 @@ const createJob = async (req,res) => {
         agentClient.post('/embed-jd', { jobId: job._id, jdText })
             .then(() => console.log(`Embedding triggered for job ${job._id}`))
             .catch(err => console.error(`Error triggering embedding for job ${job._id}:`, err));
+        return res.status(201).json(job);
     } catch (error) {
         console.error(`Error creating job for user ${userId}:`, error);
-        res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: "Internal server error" });
     }
 }
 

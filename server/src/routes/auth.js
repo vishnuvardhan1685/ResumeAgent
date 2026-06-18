@@ -18,11 +18,12 @@
 // jwt.verify(refreshToken, JWT_REFRESH_SECRET) → get userId
 // Return new { accessToken }
 import express from 'express';
-import { googleAuth, refreshToken } from '../controllers/auth.controller.js';
+import { googleAuth, refreshToken, logout } from '../controllers/auth.controller.js';
 
 const router = express.Router();
 
 router.post('/google', googleAuth);
 router.post('/refresh', refreshToken);
+router.delete('/logout', logout);
 
 export default router;

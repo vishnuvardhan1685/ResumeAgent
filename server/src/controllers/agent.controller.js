@@ -10,7 +10,7 @@
 
 import express from 'express';
 import { verifyToken } from '../middlewares/auth.js';
-import { agentClient } from '../utils/agentClient.js';
+import agentClient from '../utils/agentClient.js';
 import Resume from '../models/Resume.js';
 import JobListing from '../models/JobListing.js';
 

@@ -10,11 +10,14 @@
 // delete from Cloudinary using cloudinary.uploader.destroy(publicId), then Resume.findByIdAndDelete.
 import express from 'express';
 import Resume from '../models/Resume.js';
-import { agentClient } from '../utils/agentClient.js';
+import agentClient from '../utils/agentClient.js';
 import { cloudinary } from '../config/cloudinary.js';
 
 const uploadResume = async (req,res) => {
     const userId = req.user.id;
+    if(!req.file) {
+        return res.status(400).json({ message: 'Resume file is required' });
+    }
     const fileName = req.file.originalname;
     const cloudinaryUrl = req.file.path;
     try {

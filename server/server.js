@@ -7,8 +7,8 @@
 //     console.log(`Server running on port 5000`);
 //   });
 // });
-import express from 'express';
-import { connectDB } from './src/config/db';
+import 'dotenv/config';
+import { connectDB } from './src/config/db.js';
 import app from './app.js';
 
 connectDB().then(() => {

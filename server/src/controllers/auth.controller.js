@@ -14,6 +14,7 @@
 // jwt.verify(refreshToken, JWT_REFRESH_SECRET) → get userId
 // Return new { accessToken }
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/generateTokens.js';
@@ -62,4 +63,8 @@ const refreshToken = async (req,res) => {
     }
 }
 
-export { googleAuth, refreshToken };
+const logout = async (req, res) => {
+    return res.status(204).send();
+}
+
+export { googleAuth, refreshToken, logout };
