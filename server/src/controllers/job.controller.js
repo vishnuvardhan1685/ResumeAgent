@@ -12,11 +12,17 @@ import agentClient from '../utils/agentClient.js';
 const createJob = async (req,res) => {
     const userId = req.user.id;
     const { title, company, seniorityLevel, jdText } = req.body;
-    if(!jdText) {
-        return res.status(400).json({ message: "Job description text (jdText) is required" });
+    if(!title?.trim() || !company?.trim() || !jdText?.trim()) {
+        return res.status(400).json({ message: "Title, company, and job description are required" });
     }
     try {
-        const job = new Job({ userId, title, company, seniorityLevel, jdText });
+        const job = new Job({
+            userId,
+            title: title.trim(),
+            company: company.trim(),
+            seniorityLevel,
+            jdText: jdText.trim(),
+        });
         await job.save();
         console.log(`Job created with ID ${job._id} for user ${userId}`);
         // Fire-and-forget embedding

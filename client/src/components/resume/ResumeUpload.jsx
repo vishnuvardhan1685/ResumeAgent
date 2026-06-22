@@ -28,6 +28,7 @@ const ResumeUpload = ({ onSuccess }) => {
         formData.append('resume', file);
         const result = await uploadResume(formData);
         useResumeStore.getState().addResume(result);
+        useResumeStore.getState().selectResume(result._id);
         onSuccess?.(result);
       } catch (err) {
         setError(err?.response?.data?.message ?? err?.message ?? 'Upload failed. Please try again.');

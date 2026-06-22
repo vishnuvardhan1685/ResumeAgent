@@ -23,7 +23,8 @@ const uploadResume = async (req,res) => {
     try {
         const response = await agentClient.post('/parse-pdf', { cloudinaryUrl });
         const parsedText = response.data.parsedText;
-        const resume = new Resume({ userId, fileName, cloudinaryUrl, parsedText });
+        const extractedSkills = response.data.extractedData?.skills ?? [];
+        const resume = new Resume({ userId, fileName, cloudinaryUrl, parsedText, extractedSkills });
         await resume.save();
         console.log(`Resume uploaded and parsed for user ${userId}: ${fileName}`);
         return res.status(201).json(resume);

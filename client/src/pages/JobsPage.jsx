@@ -2,15 +2,23 @@ import React, { useState } from 'react';
 import JDForm from '../components/job/JDForm';
 import JobList from '../components/job/JobList';
 import useJobStore from '../store/jobStore';
+import useResumeStore from '../store/resumeStore';
+import { useNavigate } from 'react-router-dom';
 
 const JobsPage = () => {
   const [selectedId, setSelectedId] = useState(null);
+  const navigate = useNavigate();
+  const selectedResumeId = useResumeStore((s) => s.selectedResumeId);
   const { addJob, selectJob } = useJobStore();
 
   const handleSaved = (job) => {
     if (job?._id) {
       addJob(job);
       setSelectedId(job._id);
+      selectJob(job._id);
+      if (selectedResumeId) {
+        navigate(`/analyze?resumeId=${selectedResumeId}&jobId=${job._id}&autorun=1`);
+      }
     }
   };
 

@@ -79,7 +79,7 @@ def extract_skills(text: str) -> List[str]:
     lowered = text.lower()
     found = []
     for skill in SKILL_KEYWORDS:
-        pattern = r"(?<![a-z0-9+#.])" + re.escape(skill) + r"(?![a-z0-9+#.])"
+        pattern = r"(?<![a-z0-9+#])" + re.escape(skill) + r"(?![a-z0-9+#])"
         if re.search(pattern, lowered):
             found.append(normalize_skill(skill))
     return sorted(set(found), key=str.lower)

@@ -19,6 +19,7 @@ def match_resume_to_job(resume_text: str, job_text: str, extracted_data: Extract
     gaps = [f"Add more evidence for {skill}" for skill in missing[:5]]
 
     return MatchResult(
+        
         overallScore=round(overall * 100, 2),
         semanticSimilarity=round(semantic * 100, 2),
         skillMatchPct=round(skill_match * 100, 2),
@@ -28,3 +29,5 @@ def match_resume_to_job(resume_text: str, job_text: str, extracted_data: Extract
         strengthAreas=strengths,
         gapAreas=gaps,
     )
+
+ 

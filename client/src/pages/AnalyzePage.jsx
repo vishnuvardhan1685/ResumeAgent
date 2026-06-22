@@ -8,11 +8,8 @@ import InterviewPanel from '../components/interview/InterviewPanel';
 import SuggestionsPanel from '../components/suggestions/SuggestionsPanel';
 import Tabs from '../components/ui/Tabs';
 import EmptyState from '../components/ui/EmptyState';
-import useSSE from '../hooks/useSSE';
 import usePipelineStore from '../store/pipelineStore';
-import useAuthStore from '../store/authStore';
 import useResumeStore from '../store/resumeStore';
-import { getSSEUrl } from '../api/agent.api';
 
 const TABS = [
   { id: 'match', label: 'Match Score', icon: <BarChart2 size={14} /> },
@@ -25,26 +22,24 @@ const AnalyzePage = () => {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('match');
 
-  const { sessionId, matchResult, error } = usePipelineStore();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const { matchResult, error } = usePipelineStore();
   const resumes = useResumeStore((s) => s.resumes);
   const selectedResumeId = useResumeStore((s) => s.selectedResumeId);
 
   // Build SSE URL once we have a sessionId
-  const sseUrl = sessionId ? getSSEUrl(sessionId, accessToken) : null;
-
   // Open SSE stream — useSSE drives pipelineStore automatically
-  useSSE(sseUrl);
 
   // Pre-select resume from URL query param (e.g. from ResumeCard "Analyze" button)
   const defaultResumeId = searchParams.get('resumeId') ?? undefined;
+  const defaultJobId = searchParams.get('jobId') ?? undefined;
+  const autoRun = searchParams.get('autorun') === '1';
   const activeResumeId = defaultResumeId ?? selectedResumeId;
   const activeResume = resumes.find((resume) => resume._id === activeResumeId);
 
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Step 1: configure */}
-      <PipelineSelector defaultResumeId={defaultResumeId} />
+      <PipelineSelector defaultResumeId={defaultResumeId} defaultJobId={defaultJobId} autoRun={autoRun} />
 
       {/* Step 2: live progress — hidden when idle */}
       <AgentProgressBar />
