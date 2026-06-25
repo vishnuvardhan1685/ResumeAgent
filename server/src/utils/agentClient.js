@@ -6,7 +6,7 @@ import axios from 'axios';
 
 const agentClient = axios.create({
     baseURL: process.env.AGENT_SERVICE_URL,
-    timeout: 60000,
+    timeout: 120000,
 })
 
 export default agentClient;

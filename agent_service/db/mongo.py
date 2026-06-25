@@ -1,9 +1,19 @@
 from typing import Any
+from urllib.parse import unquote, urlparse
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from config import get_settings
+
+
+def _database_name() -> str:
+    settings = get_settings()
+    if settings.mongo_uri:
+        path = urlparse(settings.mongo_uri).path.strip("/")
+        if path:
+            return unquote(path.split("/")[0])
+    return settings.mongo_db_name
 
 _client: AsyncIOMotorClient | None = None
 
@@ -22,7 +32,7 @@ def get_database():
     client = get_mongo_client()
     if client is None:
         return None
-    return client[get_settings().mongo_db_name]
+    return client[_database_name()]
 
 
 def to_object_id(value: str) -> ObjectId:

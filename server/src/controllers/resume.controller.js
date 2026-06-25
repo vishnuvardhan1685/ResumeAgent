@@ -8,10 +8,18 @@
 
 // deleteResume: find by _id + userId (ownership check), 
 // delete from Cloudinary using cloudinary.uploader.destroy(publicId), then Resume.findByIdAndDelete.
-import express from 'express';
+import fs from 'fs';
 import Resume from '../models/Resume.js';
 import agentClient from '../utils/agentClient.js';
-import { cloudinary } from '../config/cloudinary.js';
+import { cloudinary, useLocalUpload } from '../config/cloudinary.js';
+
+const buildParsePayload = (file) => {
+    const storedPath = file.path;
+    if (useLocalUpload || !String(storedPath).startsWith('http')) {
+        return { filePath: storedPath };
+    }
+    return { cloudinaryUrl: storedPath };
+};
 
 const uploadResume = async (req,res) => {
     const userId = req.user.id;
@@ -21,16 +29,19 @@ const uploadResume = async (req,res) => {
     const fileName = req.file.originalname;
     const cloudinaryUrl = req.file.path;
     try {
-        const response = await agentClient.post('/parse-pdf', { cloudinaryUrl });
-        const parsedText = response.data.parsedText;
+        const response = await agentClient.post('/parse-pdf', buildParsePayload(req.file));        const parsedText = response.data.parsedText;
         const extractedSkills = response.data.extractedData?.skills ?? [];
         const resume = new Resume({ userId, fileName, cloudinaryUrl, parsedText, extractedSkills });
         await resume.save();
         console.log(`Resume uploaded and parsed for user ${userId}: ${fileName}`);
         return res.status(201).json(resume);
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('Resume upload/parse failed:', error.message ?? error);
+        const agentDown = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND';
+        const message = agentDown
+            ? 'Agent service is unavailable. Start agent_service on port 8000 and retry.'
+            : error.response?.data?.detail ?? error.message ?? 'Failed to parse resume PDF';
+        return res.status(agentDown ? 503 : 500).json({ message, error: 'Internal server error' });
     }
 }
 
@@ -72,8 +83,11 @@ const deleteResume = async (req,res) => {
             return res.status(404).json({ error: 'Resume not found' });
         }
         const publicId = resume.cloudinaryUrl.split('/').pop().split('.')[0];
-        await cloudinary.uploader.destroy(publicId);
-        await Resume.findByIdAndDelete(resumeId);
+        if (!useLocalUpload && resume.cloudinaryUrl.startsWith('http')) {
+            await cloudinary.uploader.destroy(publicId);
+        } else if (useLocalUpload && fs.existsSync(resume.cloudinaryUrl)) {
+            fs.unlinkSync(resume.cloudinaryUrl);
+        }        await Resume.findByIdAndDelete(resumeId);
         console.log(`Deleted resume ${resumeId} for user ${userId}`);
         return res.status(200).json({ message: 'Resume deleted successfully' });
     } catch (error) {

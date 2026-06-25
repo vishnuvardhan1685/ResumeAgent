@@ -30,10 +30,18 @@ def _text_from_job(job: dict[str, Any] | None) -> str:
 
 
 async def _resolve_inputs(payload: AnalyzeRequest) -> tuple[str, str, dict[str, Any] | None, dict[str, Any] | None]:
-    resume = await find_resume(payload.resumeId)
-    job = await find_job_text(payload.jobId)
-    parsed_text = payload.parsedText or (resume or {}).get("parsedText") or ""
-    job_text = payload.jdText or _text_from_job(job)
+    resume = None
+    job = None
+    if payload.parsedText:
+        parsed_text = payload.parsedText
+    else:
+        resume = await find_resume(payload.resumeId)
+        parsed_text = (resume or {}).get("parsedText") or ""
+    if payload.jdText:
+        job_text = payload.jdText
+    else:
+        job = await find_job_text(payload.jobId)
+        job_text = _text_from_job(job)
     if not parsed_text:
         raise HTTPException(status_code=404, detail="Resume text not found")
     if not job_text:

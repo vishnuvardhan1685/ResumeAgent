@@ -40,8 +40,10 @@ const usePipelineStore = create((set) => ({
   run: async (resumeId, jobId) => {
     set({
       status: 'running',
-      sessionId: null,
-      agentProgress: {},
+      sessionId: `${resumeId}-${jobId}`,
+      agentProgress: {
+        extractor: { status: 'running', message: 'Starting analysis…' },
+      },
       matchResult: null,
       error: null,
     });
