@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Play, ChevronDown } from 'lucide-react';
 import Button from '../ui/Button';
 import usePipelineStore from '../../store/pipelineStore';
@@ -35,11 +35,12 @@ const Select = ({ label, value, onChange, options, placeholder }) => (
   </div>
 );
 
-const PipelineSelector = ({ defaultResumeId }) => {
+const PipelineSelector = ({ defaultResumeId, defaultJobId, autoRun = false }) => {
   const [resumes, setResumes] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [resumeId, setResumeId] = useState(defaultResumeId ?? '');
-  const [jobId, setJobId] = useState('');
+  const [jobId, setJobId] = useState(defaultJobId ?? '');
+  const autoRunStarted = useRef(false);
   const setStoreResumes = useResumeStore((s) => s.setResumes);
   const selectResume = useResumeStore((s) => s.selectResume);
   const setStoreJobs = useJobStore((s) => s.setJobs);
@@ -62,6 +63,14 @@ const PipelineSelector = ({ defaultResumeId }) => {
     };
     load();
   }, [setStoreJobs, setStoreResumes]);
+
+  useEffect(() => {
+    if (!autoRun || autoRunStarted.current || !resumeId || !jobId || !resumes.length || !jobs.length) return;
+    autoRunStarted.current = true;
+    selectResume(resumeId);
+    selectJob(jobId);
+    run(resumeId, jobId);
+  }, [autoRun, jobId, jobs.length, resumeId, resumes.length, run, selectJob, selectResume]);
 
   const handleRun = () => {
     if (!resumeId || !jobId) return;

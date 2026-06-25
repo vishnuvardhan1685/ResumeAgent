@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { triggerAnalyze } from '../api/agent.api';
+import { streamAnalysis } from '../api/agent.api';
 
 /**
  * pipelineStore
@@ -40,26 +40,42 @@ const usePipelineStore = create((set) => ({
   run: async (resumeId, jobId) => {
     set({
       status: 'running',
-      sessionId: null,
-      agentProgress: {},
+      sessionId: `${resumeId}-${jobId}`,
+      agentProgress: {
+        extractor: { status: 'running', message: 'Starting analysis…' },
+      },
       matchResult: null,
       error: null,
     });
 
     try {
-      const data = await triggerAnalyze({ resumeId, jobId });
-      if (data.sessionId) {
-        set({ sessionId: data.sessionId });
-        return data;
-      }
-
-      if (data.result) {
-        set({ matchResult: data.result, status: 'done' });
-        return data;
-      }
-
-      set({ matchResult: data, status: 'done' });
-      return data;
+      const result = await streamAnalysis({
+        resumeId,
+        jobId,
+        onEvent: ({ event, data }) => {
+          if (event === 'complete') {
+            set({
+              matchResult: data,
+              status: 'done',
+              agentProgress: {
+                extractor: { status: 'done', message: 'Resume parsed' },
+                matcher: { status: 'done', message: 'Match scored' },
+                interviewer: { status: 'done', message: 'Questions ready' },
+                editor: { status: 'done', message: 'Suggestions ready' },
+                finalize: { status: 'done', message: 'Complete' },
+              },
+            });
+          } else if (data?.agentName) {
+            set((state) => ({
+              agentProgress: {
+                ...state.agentProgress,
+                [data.agentName]: { status: data.status, message: data.message ?? '' },
+              },
+            }));
+          }
+        },
+      });
+      return result;
     } catch (err) {
       set({
         status: 'error',

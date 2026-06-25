@@ -1,25 +1,42 @@
-// src/config/cloudinary.js
-// Call cloudinary.config({ cloud_name, api_key, api_secret }) from env vars. 
-// Export the configured cloudinary object and a multer-storage-cloudinary storage 
-// instance pointing to the resumes folder with resource_type: 'raw' (for PDFs). 
-// Also export the multer upload middleware using that storage (field name: resume, single file).
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cloudinary from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, '../../uploads');
+const useLocalUpload = process.env.USE_LOCAL_UPLOAD === 'true';
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
-})
+});
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
+if (useLocalUpload && !fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const localStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+        const safeName = file.originalname.replace(/[^\w.-]/g, '_');
+        cb(null, `${Date.now()}-${safeName}`);
+    },
+});
+
+const cloudinaryStorage = new CloudinaryStorage({
+    cloudinary,
     params: {
         folder: 'resumes',
         resource_type: 'raw',
-    }
-})
+    },
+});
 
-export const upload = multer({ storage: storage }).single('resume');
-export { cloudinary };
+export const upload = multer({
+    storage: useLocalUpload ? localStorage : cloudinaryStorage,
+}).single('resume');
+
+export { cloudinary, useLocalUpload, uploadsDir };

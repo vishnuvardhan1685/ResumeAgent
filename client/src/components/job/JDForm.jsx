@@ -23,8 +23,8 @@ const JDForm = ({ onSaved }) => {
   };
 
   const handleSave = async () => {
-    if (!form.jdText.trim()) {
-      setError('Job description is required.');
+    if (!form.title.trim() || !form.company.trim() || !form.jdText.trim()) {
+      setError('Company, job title, and job description are required.');
       return;
     }
     setError(null);

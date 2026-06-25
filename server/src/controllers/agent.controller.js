@@ -12,7 +12,7 @@ import express from 'express';
 import { verifyToken } from '../middlewares/auth.js';
 import agentClient from '../utils/agentClient.js';
 import Resume from '../models/Resume.js';
-import JobListing from '../models/JobListing.js';
+import Job from '../models/Job.js';
 
 const analyze = async (req,res) => {
     const { resumeId, jobId } = req.body;
@@ -22,7 +22,7 @@ const analyze = async (req,res) => {
             console.log('Resume not found or does not belong to user:', resumeId);
             return res.status(404).json({ message: "Resume not found" });
         }
-        const job = await JobListing.findOne({ _id: jobId, userId: req.user.id });
+        const job = await Job.findOne({ _id: jobId, userId: req.user.id });
         if(!job){
             console.log('Job listing not found or does not belong to user:', jobId);
             return res.status(404).json({ message: "Job listing not found" });
@@ -31,23 +31,34 @@ const analyze = async (req,res) => {
             method: 'post',
             url: '/analyze',
             data: { resumeId, jobId },
-            responseType: 'stream'
+            responseType: 'stream',
+            timeout: 0
         });
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders?.();
         response.data.on('data', chunk => {
             res.write(chunk);
         });
         response.data.on('end', () => {
             res.end();
         });
+        response.data.on('error', (streamError) => {
+            console.error('Agent stream failed:', streamError);
+            if (!res.writableEnded) {
+                res.write(`event: error\ndata: ${JSON.stringify({ message: 'Agent pipeline stream failed' })}\n\n`);
+                res.end();
+            }
+        });
         req.on('close', () => {
             response.data.destroy();
         });
     } catch (error) {
         console.log(`Error in analyze route for resume ${resumeId} and job ${jobId}:`, error);
-        return res.status(500).json({ message: "Internal server error" });
+        const status = error.response?.status ?? 500;
+        const message = error.response?.data?.detail ?? error.response?.data?.message ?? "Agent pipeline failed";
+        return res.status(status).json({ message });
     }
 }
 

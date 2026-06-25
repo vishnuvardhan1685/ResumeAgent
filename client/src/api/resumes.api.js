@@ -20,6 +20,7 @@ export const uploadResume = async (formData) => {
   // formData must have field 'resume' with the PDF File object
   const { data } = await axiosInstance.post('/api/resumes/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120_000,
   });
   return data; // Resume document
 };

@@ -2,15 +2,22 @@ import React, { useState } from 'react';
 import ResumeUpload from '../components/resume/ResumeUpload';
 import ResumeList from '../components/resume/ResumeList';
 import useResumeStore from '../store/resumeStore';
+import useJobStore from '../store/jobStore';
+import { useNavigate } from 'react-router-dom';
 
 const ResumesPage = () => {
-  const addResume = useResumeStore((s) => s.addResume);
+  const navigate = useNavigate();
+  const selectedJobId = useJobStore((s) => s.selectedJobId);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleSuccess = (resume) => {
-    if (resume?._id) addResume(resume);
     // Trigger ResumeList to refetch
     setRefreshKey((k) => k + 1);
+    if (resume?._id && selectedJobId) {
+      navigate(`/analyze?resumeId=${resume._id}&jobId=${selectedJobId}&autorun=1`);
+    } else if (resume?._id) {
+      navigate('/jobs');
+    }
   };
 
   return (
