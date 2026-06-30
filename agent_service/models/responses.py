@@ -2,7 +2,6 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
-
 class ExtractedData(BaseModel):
     skills: List[str] = Field(default_factory=list)
     entities: Dict[str, List[str]] = Field(default_factory=dict)
@@ -28,7 +27,7 @@ class JobListing(BaseModel):
     description: str | None = None
     applyLink: str | None = None
     source: str
-    matchScore: float = 0
+    matchScore: float = 0.0      # populated by rank_by_similarity
 
 
 class ParseResponse(BaseModel):
@@ -36,8 +35,24 @@ class ParseResponse(BaseModel):
     extractedData: ExtractedData | None = None
 
 
+class ResumeSuggestionItem(BaseModel):
+    section: str                    # "experience", "skills", "projects", "summary"
+    priority: str                   # "high", "medium", "low"
+    type: str                       # "rewrite" | "new_bullet" | "remove" | "reorder"
+    original: str | None = None     # the existing bullet being rewritten (if any)
+    suggested: str                  # the new bullet text
+    reason: str                     # why this change helps match the JD
+    skill_addressed: str            # which skill/keyword this targets
+
+
+class SuggestionsResponse(BaseModel):
+    summary: str                                    # one-line overall advice
+    items: List[ResumeSuggestionItem]               # all individual suggestions
+    priority_skills: List[str]                      # top 3 skills to highlight immediately
+
+
 class AnalyzeResponse(BaseModel):
     extractedData: ExtractedData
     matchResult: MatchResult
     questions: List[Dict[str, Any]]
-    suggestions: Dict[str, Any]
+    suggestions: SuggestionsResponse

@@ -13,9 +13,10 @@ from db.postgres import upsert_job_embedding
 from graph import extraction_node, matcher_node, interviewer_node, editor_node
 from models.requests import AnalyzeRequest, EmbedJobRequest
 from tools.embedding_tools import embed_text
+from config import get_settings
+import traceback
 
 router = APIRouter()
-
 
 def _sse(event: str, data: Any) -> str:
     return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
@@ -30,17 +31,22 @@ def _text_from_job(job: dict[str, Any] | None) -> str:
 
 
 async def _resolve_inputs(payload: AnalyzeRequest) -> tuple[str, str, dict[str, Any] | None, dict[str, Any] | None]:
+    print("Entering resolve_inputs")
     resume = None
     job = None
     if payload.parsedText:
         parsed_text = payload.parsedText
     else:
+        print("Calling find_resume")
         resume = await find_resume(payload.resumeId)
+        print("Resume returned:", resume)
         parsed_text = (resume or {}).get("parsedText") or ""
     if payload.jdText:
         job_text = payload.jdText
     else:
+        print("Calling find_job_text...")
         job = await find_job_text(payload.jobId)
+        print("Job returned:", job)
         job_text = _text_from_job(job)
     if not parsed_text:
         raise HTTPException(status_code=404, detail="Resume text not found")
@@ -51,6 +57,12 @@ async def _resolve_inputs(payload: AnalyzeRequest) -> tuple[str, str, dict[str, 
 
 @router.post("/analyze")
 async def analyze(payload: AnalyzeRequest) -> StreamingResponse:
+    print("Analyze endpoint hit!")
+    settings = get_settings()
+    print("Mongo URI:", settings.mongo_uri)
+    print("Mongo DB Name:", settings.mongo_db_name)
+    print(payload)
+
     parsed_text, job_text, resume, _job = await _resolve_inputs(payload)
 
     async def stream() -> AsyncIterator[str]:
@@ -59,6 +71,7 @@ async def analyze(payload: AnalyzeRequest) -> StreamingResponse:
                 "job_id": payload.jobId,
                 "parsed_text": parsed_text,
                 "job_text": job_text,
+                "difficulty": payload.difficulty,
                 "events": [],
         }
         try:
@@ -84,7 +97,13 @@ async def analyze(payload: AnalyzeRequest) -> StreamingResponse:
             yield _sse("interviewer", {"agentName": "interviewer", "status": "done", "message": "Questions ready"})
             yield _sse("editor", {"agentName": "editor", "status": "done", "message": "Suggestions ready"})
         except Exception as exc:
-            yield _sse("error", {"message": f"Pipeline failed: {exc}"})
+            print("\n========== PIPELINE ERROR ==========")
+            traceback.print_exc()
+            print("====================================\n")
+
+            yield _sse("error", {
+                "message": f"Pipeline failed: {exc}"
+            })
             return
 
         match_result = state.get("match_result", {})

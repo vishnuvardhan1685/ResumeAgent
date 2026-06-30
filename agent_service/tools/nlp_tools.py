@@ -9,40 +9,29 @@ except ImportError:  # pragma: no cover - optional at runtime
 
 
 SKILL_KEYWORDS = {
-    "python",
-    "javascript",
-    "typescript",
-    "react",
-    "node.js",
-    "node",
-    "express",
-    "fastapi",
-    "django",
-    "flask",
-    "mongodb",
-    "postgresql",
-    "postgres",
-    "mysql",
-    "redis",
-    "docker",
-    "kubernetes",
-    "aws",
-    "azure",
-    "gcp",
-    "langchain",
-    "langgraph",
-    "machine learning",
-    "deep learning",
-    "nlp",
-    "pandas",
-    "numpy",
-    "tensorflow",
-    "pytorch",
-    "scikit-learn",
-    "git",
-    "rest api",
-    "graphql",
-    "tailwind",
+    # --- existing ones stay ---
+    "python", "javascript", "typescript", "react", "node.js", "node",
+    "express", "fastapi", "django", "flask", "mongodb", "postgresql",
+    "postgres", "mysql", "redis", "docker", "kubernetes", "aws", "azure",
+    "gcp", "langchain", "langgraph", "machine learning", "deep learning",
+    "nlp", "pandas", "numpy", "tensorflow", "pytorch", "scikit-learn",
+    "git", "rest api", "graphql", "tailwind",
+
+    # --- new additions ---
+    "next.js", "nextjs", "vue", "vue.js", "angular", "svelte",
+    "spring boot", "spring", "java", "c++", "c#", "golang", "go", "rust",
+    "kafka", "rabbitmq", "celery",
+    "terraform", "ansible", "ci/cd", "github actions", "jenkins",
+    "jest", "pytest", "selenium", "cypress",
+    "socket.io", "websocket", "grpc",
+    "elasticsearch", "cassandra", "dynamodb", "firebase",
+    "linux", "bash", "nginx",
+    "figma", "html", "css",
+    "hugging face", "openai", "langsmith",
+    "supabase", "prisma", "mongoose",
+    "stripe", "twilio", "sendgrid",
+    "pydantic", "sqlalchemy", "alembic",
+    "power bi", "tableau", "excel",
 }
 
 _NLP = None
@@ -62,6 +51,7 @@ def _get_nlp():
 
 def normalize_skill(skill: str) -> str:
     aliases = {
+        # existing
         "node": "Node.js",
         "node.js": "Node.js",
         "postgres": "PostgreSQL",
@@ -70,6 +60,17 @@ def normalize_skill(skill: str) -> str:
         "nlp": "NLP",
         "aws": "AWS",
         "gcp": "GCP",
+        # new
+        "nextjs": "Next.js",
+        "next.js": "Next.js",
+        "vue.js": "Vue.js",
+        "vue": "Vue.js",
+        "ci/cd": "CI/CD",
+        "socket.io": "Socket.IO",
+        "golang": "Go",
+        "hugging face": "Hugging Face",
+        "c#": "C#",
+        "c++": "C++",
     }
     key = skill.strip().lower()
     return aliases.get(key, skill.strip().title())
@@ -104,16 +105,19 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     return {label: sorted(values) for label, values in entities.items()}
 
 
-def estimate_years_experience(text: str) -> float | None:
+def estimate_years_experience(text: str) -> float:
     patterns = [
         r"(\d+(?:\.\d+)?)\+?\s+years?\s+(?:of\s+)?experience",
         r"experience\s+of\s+(\d+(?:\.\d+)?)\+?\s+years?",
     ]
+
     matches = []
     lowered = text.lower()
+
     for pattern in patterns:
-        matches.extend(float(value) for value in re.findall(pattern, lowered))
-    return max(matches) if matches else None
+        matches.extend(float(x) for x in re.findall(pattern, lowered))
+
+    return max(matches) if matches else 0.0
 
 
 def summarize_text(text: str, max_chars: int = 500) -> str:

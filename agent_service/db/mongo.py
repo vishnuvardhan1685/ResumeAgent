@@ -5,6 +5,7 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from config import get_settings
+import certifi
 
 
 def _database_name() -> str:
@@ -15,7 +16,13 @@ def _database_name() -> str:
             return unquote(path.split("/")[0])
     return settings.mongo_db_name
 
-_client: AsyncIOMotorClient | None = None
+import certifi
+
+_client = AsyncIOMotorClient(
+    get_settings().mongo_uri,
+    tls=True,
+    tlsCAFile=certifi.where(),
+)
 
 
 def get_mongo_client() -> AsyncIOMotorClient | None:
@@ -32,6 +39,9 @@ def get_database():
     client = get_mongo_client()
     if client is None:
         return None
+
+    print("Mongo URI:", get_settings().mongo_uri)
+    print("Mongo DB:", _database_name())
     return client[_database_name()]
 
 
