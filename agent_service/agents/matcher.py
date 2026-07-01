@@ -12,7 +12,7 @@ def match_resume_to_job(resume_text: str, job_text: str, extracted_data: Extract
     bonus = sorted(resume_skills - job_skills, key=str.lower)
 
     semantic = cosine_similarity(embed_text(resume_text or ""), embed_text(job_text or ""))
-    skill_match = len(matched) / len(job_skills) if job_skills else (1 if resume_skills else 0)
+    skill_match = (len(matched) / len(job_skills)) if job_skills else 0.0
     overall = (semantic * 0.55) + (skill_match * 0.45)
 
     strengths = [f"Strong alignment on {skill}" for skill in matched[:5]]

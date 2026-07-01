@@ -27,20 +27,28 @@ const Field = ({ label, hint, children }) => (
 );
 
 const Toggle = ({ label, description, value, onChange }) => (
-  <div className="flex items-center justify-between py-1">
-    <div>
-      <p className="text-sm text-text-primary">{label}</p>
-      {description && <p className="text-xs text-text-secondary">{description}</p>}
+  <div className="flex items-start justify-between gap-3 py-3">
+    <div className="flex-1">
+      <p className="text-sm font-medium text-text-primary">{label}</p>
+
+      {description && (
+        <p className="mt-1 text-xs leading-5 text-text-secondary">
+          {description}
+        </p>
+      )}
     </div>
+
     <button
+      type="button"
       onClick={() => onChange(!value)}
-      className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
-        value ? 'bg-accent' : 'bg-border'
+      aria-pressed={value}
+      className={`relative flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ${
+        value ? "bg-accent" : "bg-border"
       }`}
     >
       <span
-        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
-          value ? 'translate-x-5' : 'translate-x-0.5'
+        className={`absolute left-1 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-300 ${
+          value ? "translate-x-5" : "translate-x-0"
         }`}
       />
     </button>
@@ -52,6 +60,7 @@ const inputCls = 'w-full h-9 px-3 text-sm rounded-lg bg-base border border-borde
 const SettingsPage = () => {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
+  const logout = useAuthStore((s) => s.logout);
 
   const [displayName, setDisplayName] = useState(user?.name ?? '');
   const [saved, setSaved] = useState(false);
@@ -68,6 +77,14 @@ const SettingsPage = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+  
+  const handleLogout = () => {
+      // TODO: call POST /api/user/logout
+      // then: clear user from store and redirect to login page
+      logout();
+      updateUser(null);
+      window.location.href = '/login';
+  }
 
   return (
     <div className="max-w-2xl space-y-6 animate-fade-in">
@@ -168,6 +185,16 @@ const SettingsPage = () => {
             </div>
             <Button size="sm" variant="secondary" disabled>
               Coming soon
+            </Button>
+          </div>
+          
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <div>
+              <p className="text-sm text-text-primary">Logout</p>
+              <p className="text-xs text-text-secondary">Sign out of your account</p>
+            </div>
+            <Button size="sm" variant="secondary" onClick={handleLogout}>
+              Logout
             </Button>
           </div>
           <div className="flex items-center justify-between pt-3 border-t border-border">

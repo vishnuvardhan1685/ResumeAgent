@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Any, Dict, List
+from config import get_settings
 
 try:
     import google.generativeai as genai
@@ -67,7 +68,7 @@ QUESTION_TYPES = {
 def build_prompt(
     matched_skills: List[str],
     missing_skills: List[str],
-    resume_summary: str,
+    resume_text: str,
     job_text: str,
     difficulty: str,
     score: float,
@@ -75,72 +76,324 @@ def build_prompt(
     difficulty_guide = DIFFICULTY_INSTRUCTIONS[difficulty]
     question_types = ", ".join(QUESTION_TYPES[difficulty])
 
-    return f"""You are an expert technical interviewer preparing questions for a job interview.
+    return f"""
+You are a Senior Software Engineer and Hiring Manager at a top-tier product company such as Google, Microsoft, Meta, Atlassian, or Amazon.
 
-## Candidate Profile
-- Resume Summary: {resume_summary}
-- Skills they have (matched): {", ".join(matched_skills) or "not specified"}
-- Skills the JD requires but they lack (gaps): {", ".join(missing_skills) or "none"}
-- Overall match score: {score:.0f}/100
+You are conducting a real technical interview for the position described below.
 
-## Job Description (excerpt)
-{job_text[:1200]}
+Your responsibility is NOT to test textbook knowledge.
 
-## Difficulty Level: {difficulty.upper()}
+Your responsibility is to determine whether the candidate genuinely built the projects listed on the resume and whether they can perform well in this role.
+
+Assume the candidate may have exaggerated parts of the resume. Your questions should expose real understanding, engineering maturity, design thinking, debugging ability, and practical experience.
+
+--------------------------------------------------
+CANDIDATE RESUME
+--------------------------------------------------
+
+{resume_text[:3500]}
+
+--------------------------------------------------
+MATCH ANALYSIS
+--------------------------------------------------
+
+Overall Match Score:
+{score:.0f}/100
+
+Matched Skills:
+{", ".join(matched_skills) or "Not identified"}
+
+Missing Skills:
+{", ".join(missing_skills) or "None"}
+
+--------------------------------------------------
+JOB DESCRIPTION
+--------------------------------------------------
+
+{job_text[:1800]}
+
+--------------------------------------------------
+INTERVIEW DIFFICULTY
+--------------------------------------------------
+
+Difficulty:
+{difficulty.upper()}
+
 {difficulty_guide}
 
-## Your Task
-Generate exactly 12 interview questions. Use these question types for this difficulty: {question_types}.
+--------------------------------------------------
+INTERVIEW OBJECTIVES
+--------------------------------------------------
 
-Distribution rules:
-- 4-5 questions on matched skills (probe depth, not just familiarity)
-- 3-4 questions on skill gaps (assess learning ability, not just knowledge)
-- 2-3 behavioral or situational questions relevant to this specific role
-- 1 question about the candidate's overall background/motivation for this role
+Evaluate the candidate's:
 
-For each question return a JSON object with:
-- "type": one of the question types listed above
-- "skill": the skill or topic being tested (e.g. "React", "system design", "communication")
-- "question": the full interview question text
-- "follow_up": one follow-up probe question the interviewer can use if the answer is shallow
-- "difficulty": "{difficulty}"
-- "what_to_look_for": brief note on what a strong answer includes (1-2 sentences)
+• Technical depth
+• Engineering decisions
+• Problem-solving ability
+• Debugging skills
+• Production awareness
+• System design thinking
+• Communication
+• Learning ability
+• Role fit
 
-Return ONLY a valid JSON array of 12 objects. No markdown, no explanation, no preamble.
-Example format:
+--------------------------------------------------
+QUESTION DISTRIBUTION
+--------------------------------------------------
+
+Generate EXACTLY 12 questions.
+
+The distribution MUST be:
+
+1. Resume Deep Dive (3)
+   - Ask about actual projects from the resume.
+   - Verify whether the candidate genuinely built them.
+   - Ask implementation details.
+   - Ask why specific technologies were chosen.
+
+2. Architecture & Design (3)
+   - System design decisions
+   - Scalability
+   - Tradeoffs
+   - Database choices
+   - API design
+   - Performance
+
+3. Debugging & Production (2)
+   - Failure scenarios
+   - Edge cases
+   - Bottlenecks
+   - Monitoring
+   - Logging
+   - Recovery
+
+4. Skill Gap (2)
+   - Focus ONLY on missing skills.
+   - Ask how the candidate would learn or apply them.
+   - Do NOT ask definition-based questions.
+
+5. Behavioural (1)
+   - Based on actual resume experiences.
+   - Example:
+     leadership,
+     hackathons,
+     internships,
+     teamwork,
+     project ownership.
+
+6. Career Motivation (1)
+   - Why this role?
+   - Why this company?
+   - Why this domain?
+
+--------------------------------------------------
+VERY IMPORTANT RULES
+--------------------------------------------------
+
+Every technical question MUST reference at least ONE of:
+
+• a project
+• a technology
+• a design decision
+• a metric
+• a challenge
+• a tradeoff
+
+mentioned in either the resume or the job description.
+
+Questions should progressively become harder.
+
+Question #1 should be straightforward.
+
+Question #12 should be the most challenging.
+
+Avoid repeating the same question pattern.
+
+Avoid asking multiple questions that test the same concept.
+
+--------------------------------------------------
+FORBIDDEN QUESTIONS
+--------------------------------------------------
+
+Never ask:
+
+"What is React?"
+
+"What is Java?"
+
+"What is Node.js?"
+
+"Explain Python."
+
+"Tell me about yourself."
+
+"What are your strengths?"
+
+"What are your weaknesses?"
+
+"Why should we hire you?"
+
+"What is OOP?"
+
+"Define REST."
+
+These are generic interview questions and are NOT acceptable.
+
+--------------------------------------------------
+GOOD QUESTION EXAMPLES
+--------------------------------------------------
+
+Instead of:
+
+"What is LangGraph?"
+
+Ask:
+
+"I noticed you built ResumeAgent using LangGraph.
+
+Why did you choose LangGraph over CrewAI or AutoGen?
+
+How did you manage state sharing between your agents?
+
+If one agent failed midway, how would you recover?"
+
+--------------------------------------------------
+
+Instead of:
+
+"What is PostgreSQL?"
+
+Ask:
+
+"Your IoT dashboard stores telemetry in TimescaleDB.
+
+Why did you choose TimescaleDB instead of MongoDB?
+
+How would your schema change if data volume increased to 100 million records?"
+
+--------------------------------------------------
+
+Instead of:
+
+"What is React?"
+
+Ask:
+
+"Your PubliShelf project supports live auctions.
+
+How did you synchronize bids between multiple users?
+
+How would you prevent race conditions?"
+
+--------------------------------------------------
+OUTPUT FORMAT
+--------------------------------------------------
+
+Return ONLY a valid JSON array.
+
+No markdown.
+
+No explanation.
+
+No comments.
+
+No code fences.
+
+Each object MUST have the following schema:
+
 [
   {{
-    "type": "technical",
-    "skill": "React",
-    "question": "...",
-    "follow_up": "...",
+    "type": "resume_deep_dive | architecture | debugging | skill_gap | behavioural | career",
+    "project": "Project name or null",
+    "skill": "Primary skill being tested",
+    "question": "Complete interview question",
+    "follow_up": "A deeper follow-up question",
     "difficulty": "{difficulty}",
-    "what_to_look_for": "..."
+    "expected_topics": [
+      "topic 1",
+      "topic 2",
+      "topic 3"
+    ],
+    "what_to_look_for": "What an interviewer should expect from a strong answer."
   }}
-]"""
+]
 
+Generate exactly 12 unique questions.
+
+Do not repeat question templates.
+
+Make the interview feel like one conducted by a Senior Engineer at a top product company.
+"""
 
 # ---------------------------------------------------------------------------
 # LLM call
 # ---------------------------------------------------------------------------
 
+import traceback
+
+from config import get_settings
+
+from config import get_settings
+
 def _call_llm(prompt: str) -> List[Dict[str, Any]]:
     if genai is None:
         raise RuntimeError("google-generativeai is not installed")
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+
+    settings = get_settings()
+    if not settings.gemini_api_key:
+        raise RuntimeError("GEMINI_API_KEY is not set")
+
+    genai.configure(api_key=settings.gemini_api_key)
     model = genai.GenerativeModel("gemini-2.5-flash")
-    
+
     response = model.generate_content(prompt)
+    print("=" * 80)
+    print("RAW GEMINI RESPONSE")
+    print("=" * 80)
+
+    print(response)
+
+    print("=" * 80)
+
+    if not hasattr(response, "text") or not response.text:
+        raise RuntimeError(f"Gemini returned an empty response:\n{response}")
+
     raw = response.text.strip()
 
-    # Strip markdown fences if present
+    print("\n================ GEMINI RAW RESPONSE ================\n")
+    print(raw)
+    print("\n=====================================================\n")
+
+    # Remove markdown fences if Gemini returns ```json ... ```
     if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
         raw = raw.strip()
 
-    return json.loads(raw)
+        if raw.startswith("```json"):
+            raw = raw[len("```json"):].strip()
+
+        elif raw.startswith("```"):
+            raw = raw[len("```"):].strip()
+
+        if raw.endswith("```"):
+            raw = raw[:-3].strip()
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        print("\n=========== INVALID JSON FROM GEMINI ===========\n")
+        print(raw)
+        print("\n===============================================\n")
+        raise
+
+    if not isinstance(data, list):
+        raise RuntimeError(
+            f"Expected a JSON array but got {type(data).__name__}"
+        )
+
+    if len(data) != 12:
+        print(f"Warning: Gemini returned {len(data)} questions instead of 12.")
+
+    return data
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +463,7 @@ def run_interviewer_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     missing_skills: List[str] = match_result.get("missingSkills", [])
     score: float = match_result.get("overallScore", match_result.get("score", 0.0))
     resume_summary: str = extracted_data.get("summary", "")
+    resume_text = state.get("parsed_text", "")
     years_exp = float(extracted_data.get("years_experience") or 0.0)
 
     if years_exp is None:
@@ -221,15 +475,26 @@ def run_interviewer_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         prompt = build_prompt(
             matched_skills=matched_skills,
             missing_skills=missing_skills,
-            resume_summary=resume_summary,
+            resume_text=resume_text,
             job_text=job_text,
             difficulty=difficulty,
             score=score,
         )
+
         questions = _call_llm(prompt)
-    except Exception as e:
-        print(f"[interviewer] LLM call failed: {e}, using fallback")
-        questions = _fallback_questions(matched_skills, missing_skills, difficulty)
+
+    except Exception:
+        print("\n========== INTERVIEWER AGENT FAILED ==========\n")
+        traceback.print_exc()
+        print("\n==============================================\n")
+
+        print("[interviewer] Falling back to template questions...\n")
+
+        questions = _fallback_questions(
+            matched_skills,
+            missing_skills,
+            difficulty,
+        )
 
     events = state.get("events", [])
     events.append({"agent": "interviewer", "status": "done", "count": len(questions)})

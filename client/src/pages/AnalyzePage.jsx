@@ -15,7 +15,7 @@ const TABS = [
   { id: 'match', label: 'Match Score', icon: <BarChart2 size={14} /> },
   { id: 'interview', label: 'Interview Questions', icon: <MessageSquare size={14} /> },
   { id: 'suggestions', label: 'Resume Suggestions', icon: <Edit3 size={14} /> },
-  { id: 'raw', label: 'Raw Data', icon: <Code2 size={14} /> },
+  { id: 'raw', label: 'Raw Data', icon: <Edit3 size={14} /> },
 ];
 
 const AnalyzePage = () => {
@@ -45,7 +45,7 @@ const AnalyzePage = () => {
       <AgentProgressBar />
 
       {/* Step 3: results tabs */}
-      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="overflow-hidden border bg-surface border-border rounded-xl">
         <Tabs
           tabs={TABS}
           active={activeTab}
@@ -88,7 +88,7 @@ const AnalyzePage = () => {
           )}
 
           {error && (
-            <div className="mt-4 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3 text-sm text-red-400">
+            <div className="px-4 py-3 mt-4 text-sm text-red-400 border bg-red-500/10 border-red-500/25 rounded-xl">
               {error}
             </div>
           )}

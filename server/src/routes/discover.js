@@ -11,6 +11,6 @@ const router = express.Router();
 router.use(verifyToken);
 router.use(discoverRateLimit);
 
-router.post('/discover', discoverJobs);
+router.post('/', discoverJobs);
 
 export default router;

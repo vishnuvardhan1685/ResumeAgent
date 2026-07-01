@@ -26,7 +26,7 @@ app.use(logger);
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/agent', agentRoutes);
-app.use('/api/discover', discoverRoutes);
+app.use('/api/jobs/discover', discoverRoutes);
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/user', userRoutes);
 

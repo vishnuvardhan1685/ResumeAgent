@@ -19,7 +19,7 @@ def extract_text_from_pdf_bytes(data: bytes) -> str:
     chunks: list[str] = []
     with pdfplumber.open(BytesIO(data)) as pdf:
         for page in pdf.pages:
-            chunks.append(page.extract_text() or "")
+            chunks.append(page.extract_text(x_tolerance=1, y_tolerance=3) or "")
     return "\n".join(chunk for chunk in chunks if chunk).strip()
 
 

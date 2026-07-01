@@ -32,6 +32,11 @@ SKILL_KEYWORDS = {
     "stripe", "twilio", "sendgrid",
     "pydantic", "sqlalchemy", "alembic",
     "power bi", "tableau", "excel",
+    "llm", "large language model", "rlhf", "lora", "fine-tuning", "fine tuning",
+    "rag", "retrieval augmented generation", "prompt engineering",
+    "knowledge graph", "transformer", "text to speech", "tts", "asr",
+    "computer vision", "generative ai", "genai", "openai", "anthropic",
+    "diffusion model", "embeddings", "vector database",
 }
 
 _NLP = None
